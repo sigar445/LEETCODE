@@ -1,0 +1,191 @@
+### `LinkedHashSet` and `LinkedHashMap`: Overview, Usage, and Examples
+
+`LinkedHashSet` and `LinkedHashMap` are Java collections that maintain insertion order while offering unique features, such as the predictability of iteration order. Below is an in-depth look into their usage, variations, and how they relate to comparators on keys and values.
+
+### 1. **LinkedHashSet**
+
+`LinkedHashSet` is an implementation of the `Set` interface that maintains insertion order. It is backed by a hash table and a doubly-linked list running through all entries, which ensures that the order in which elements were inserted is preserved.
+
+**Key Characteristics:**
+- Maintains insertion order.
+- No duplicates are allowed.
+- Performance similar to `HashSet` with O(1) for basic operations like add, remove, and contains.
+
+**Basic Usage Example:**
+```java
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+public class LinkedHashSetExample {
+    public static void main(String[] args) {
+        Set<String> set = new LinkedHashSet<>();
+        set.add("Apple");
+        set.add("Banana");
+        set.add("Cherry");
+        set.add("Apple"); // Duplicate, will not be added
+
+        System.out.println(set); // Output: [Apple, Banana, Cherry]
+    }
+}
+```
+
+**Use Cases:**
+- **Maintaining insertion order:** Useful in scenarios where the order of elements is important, such as in caching mechanisms where the most recently added item needs to be accessed first.
+- **Data Deduplication:** `LinkedHashSet` can be used to filter out duplicates while maintaining the order of items.
+- **Efficient Iteration:** Provides predictable iteration order compared to a regular `HashSet`.
+
+**Variation with Custom Sorting:**
+- **Using `TreeSet` for natural ordering:** While `LinkedHashSet` does not directly work with comparators, you can combine it with `TreeSet` to first sort elements and then maintain the sorted insertion order.
+
+```java
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.TreeSet;
+
+public class LinkedHashSetWithSorting {
+    public static void main(String[] args) {
+        Set<String> sortedSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        sortedSet.add("Banana");
+        sortedSet.add("apple");
+        sortedSet.add("Cherry");
+
+        Set<String> orderedSet = new LinkedHashSet<>(sortedSet);
+        System.out.println(orderedSet); // Output: [apple, Banana, Cherry]
+    }
+}
+```
+
+### 2. **LinkedHashMap**
+
+`LinkedHashMap` is a `Map` implementation that maintains insertion order or access order, depending on how it is configured. It is backed by a hash table and a linked list of the entries, maintaining order.
+
+**Key Characteristics:**
+- Maintains insertion or access order, configurable via the constructor.
+- Provides predictable iteration order.
+- Supports null keys and values.
+- Ideal for LRU (Least Recently Used) cache implementations.
+
+**Basic Usage Example:**
+```java
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class LinkedHashMapExample {
+    public static void main(String[] args) {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        map.put("Apple", 3);
+        map.put("Banana", 2);
+        map.put("Cherry", 5);
+
+        System.out.println(map); // Output: {Apple=3, Banana=2, Cherry=5}
+    }
+}
+```
+
+**Use Cases:**
+- **Maintaining insertion order:** Useful when the order of elements in the map needs to be preserved, such as in data serialization or JSON generation.
+- **LRU Cache Implementation:** Supports removing the least recently accessed item automatically using `accessOrder = true`.
+
+**LRU Cache Example:**
+```java
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class LRUCache<K, V> extends LinkedHashMap<K, V> {
+    private final int capacity;
+
+    public LRUCache(int capacity) {
+        super(capacity, 0.75f, true); // 'true' for access order
+        this.capacity = capacity;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+        return size() > capacity;
+    }
+
+    public static void main(String[] args) {
+        LRUCache<Integer, String> cache = new LRUCache<>(3);
+        cache.put(1, "One");
+        cache.put(2, "Two");
+        cache.put(3, "Three");
+        cache.get(1); // Accessing key 1, makes it the most recently accessed
+        cache.put(4, "Four"); // Removes key 2, as it is the least recently accessed
+
+        System.out.println(cache); // Output: {3=Three, 1=One, 4=Four}
+    }
+}
+```
+
+### **Relation to Comparators:**
+
+#### Using Comparators with `LinkedHashMap`:
+While `LinkedHashMap` itself does not directly support custom sorting with comparators (since it only maintains insertion or access order), you can sort the entries using a stream or by creating a sorted map and then inserting into a `LinkedHashMap`.
+
+1. **Sorting by Values Using Comparator:**
+   Convert entries to a stream, sort them, and collect back into a `LinkedHashMap`.
+
+   ```java
+   import java.util.*;
+   import java.util.stream.Collectors;
+
+   public class LinkedHashMapValueSort {
+       public static void main(String[] args) {
+           Map<String, Integer> map = new LinkedHashMap<>();
+           map.put("Apple", 3);
+           map.put("Banana", 2);
+           map.put("Cherry", 5);
+
+           // Sort by values
+           Map<String, Integer> sortedByValues = map.entrySet().stream()
+                   .sorted(Map.Entry.comparingByValue()) // Sort by values
+                   .collect(Collectors.toMap(
+                           Map.Entry::getKey,
+                           Map.Entry::getValue,
+                           (e1, e2) -> e1, // Merge function (not needed here)
+                           LinkedHashMap::new // Collect into LinkedHashMap
+                   ));
+
+           System.out.println(sortedByValues); // Output: {Banana=2, Apple=3, Cherry=5}
+       }
+   }
+   ```
+
+2. **Sorting by Keys Using Comparator:**
+   Sorting a `LinkedHashMap` by keys can also be done using a stream.
+
+   ```java
+   import java.util.*;
+   import java.util.stream.Collectors;
+
+   public class LinkedHashMapKeySort {
+       public static void main(String[] args) {
+           Map<String, Integer> map = new LinkedHashMap<>();
+           map.put("Apple", 3);
+           map.put("Banana", 2);
+           map.put("Cherry", 5);
+
+           // Sort by keys
+           Map<String, Integer> sortedByKeys = map.entrySet().stream()
+                   .sorted(Map.Entry.comparingByKey(Comparator.reverseOrder())) // Sort by keys in reverse order
+                   .collect(Collectors.toMap(
+                           Map.Entry::getKey,
+                           Map.Entry::getValue,
+                           (e1, e2) -> e1, // Merge function
+                           LinkedHashMap::new // Collect into LinkedHashMap
+                   ));
+
+           System.out.println(sortedByKeys); // Output: {Cherry=5, Banana=2, Apple=3}
+       }
+   }
+   ```
+
+### **Smart Use of Comparators:**
+- **Sorting on demand:** Use `Comparator` with streams when you need sorted output temporarily but do not want to affect the natural behavior of `LinkedHashMap`.
+- **Custom Ordering:** For specific order requirements, such as sorting by both keys and values, use custom comparators that handle complex sorting logic.
+
+### Summary:
+- **`LinkedHashSet`** is great for maintaining unique elements with insertion order.
+- **`LinkedHashMap`** offers predictable order (insertion or access), making it useful for ordered maps and cache implementations.
+- Both do not directly use comparators internally, but can be combined with sorting mechanisms in streams for ordered results based on custom requirements.
+- Use these collections smartly when order matters, especially in caching or scenarios where predictable iteration is needed.

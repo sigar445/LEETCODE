@@ -1,0 +1,138 @@
+The `compute`, `computeIfAbsent`, and `merge` methods are part of the Java `Map` interface and are powerful tools for performing operations on map entries in a concise and thread-safe manner. Below, I'll explain each method in detail with multiple examples to showcase their usage.
+
+### 1. `compute`
+The `compute` method allows you to compute a new value for a specific key, whether the key is present or not. The method takes two arguments: the key and a remapping function that computes the new value.
+
+**Signature**:
+```java
+V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction)
+```
+
+**Key Points**:
+- If the key is present, it uses the current value and key to compute a new value.
+- If the key is absent, it computes the value as if the current value were `null`.
+
+**Examples**:
+
+1. **Basic Increment Example**:
+   Increment a value if it exists, otherwise set it to 1.
+   ```java
+   Map<String, Integer> myMap = new HashMap<>();
+   myMap.put("apple", 2);
+   myMap.compute("apple", (key, val) -> (val == null) ? 1 : val + 1); // Increments value of "apple"
+   myMap.compute("banana", (key, val) -> (val == null) ? 1 : val + 1); // Initializes "banana" to 1
+   System.out.println(myMap); // Output: {apple=3, banana=1}
+   ```
+
+2. **Modify a String Value**:
+   Convert the existing value to uppercase if it exists.
+   ```java
+   Map<String, String> myMap = new HashMap<>();
+   myMap.put("key1", "value");
+   myMap.compute("key1", (k, v) -> v != null ? v.toUpperCase() : "default");
+   System.out.println(myMap); // Output: {key1=VALUE}
+   ```
+
+3. **Concatenating Strings**:
+   Append " World" to the value of a key.
+   ```java
+   Map<String, String> myMap = new HashMap<>();
+   myMap.put("greet", "Hello");
+   myMap.compute("greet", (k, v) -> v + " World");
+   System.out.println(myMap); // Output: {greet=Hello World}
+   ```
+
+### 2. `computeIfAbsent`
+The `computeIfAbsent` method computes a value only if the specified key is not already associated with a value (i.e., if the key is absent). This is commonly used for initializing collections within a map or setting default values.
+
+**Signature**:
+```java
+V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction)
+```
+
+**Key Points**:
+- If the key is absent, it computes and inserts the value.
+- If the key is present, the existing value remains unchanged.
+
+**Examples**:
+
+1. **Initialize a List if Absent**:
+   Add elements to a list associated with a key, initializing the list if necessary.
+   ```java
+   Map<String, List<Integer>> myMap = new HashMap<>();
+   myMap.computeIfAbsent("numbers", k -> new ArrayList<>()).add(10);
+   myMap.computeIfAbsent("numbers", k -> new ArrayList<>()).add(20);
+   System.out.println(myMap); // Output: {numbers=[10, 20]}
+   ```
+
+2. **Set Default Value if Absent**:
+   Set a default value for missing keys.
+   ```java
+   Map<String, Integer> myMap = new HashMap<>();
+   myMap.put("apple", 5);
+   myMap.computeIfAbsent("banana", k -> 10); // Adds banana with value 10
+   System.out.println(myMap); // Output: {apple=5, banana=10}
+   ```
+
+3. **Create and Populate a Map of Sets**:
+   Initialize and populate a set if the key doesn't exist.
+   ```java
+   Map<String, Set<String>> myMap = new HashMap<>();
+   myMap.computeIfAbsent("fruits", k -> new HashSet<>()).add("apple");
+   myMap.computeIfAbsent("fruits", k -> new HashSet<>()).add("banana");
+   System.out.println(myMap); // Output: {fruits=[apple, banana]}
+   ```
+
+### 3. `merge`
+The `merge` method is used to combine values in the map using a specified remapping function. If the key is not present, it inserts the value; if it is present, it applies the remapping function to combine the old and new values.
+
+**Signature**:
+```java
+V merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction)
+```
+
+**Key Points**:
+- If the key is absent, it inserts the specified value.
+- If the key is present, it applies the remapping function to merge the existing and new values.
+
+**Examples**:
+
+1. **Counting Occurrences**:
+   Increment counts in a map.
+   ```java
+   Map<String, Integer> myMap = new HashMap<>();
+   String[] words = {"apple", "banana", "apple", "orange", "banana"};
+   for (String word : words) {
+       myMap.merge(word, 1, Integer::sum); // Adds 1 or increments by 1
+   }
+   System.out.println(myMap); // Output: {apple=2, banana=2, orange=1}
+   ```
+
+2. **Concatenate Strings**:
+   Append strings if the key is already present.
+   ```java
+   Map<String, String> myMap = new HashMap<>();
+   myMap.put("key1", "Hello");
+   myMap.merge("key1", " World", String::concat); // Appends " World"
+   myMap.merge("key2", "Hello", String::concat);  // Adds key2 with "Hello"
+   System.out.println(myMap); // Output: {key1=Hello World, key2=Hello}
+   ```
+
+3. **Updating Collections**:
+   Combine sets in a map.
+   ```java
+   Map<String, Set<String>> myMap = new HashMap<>();
+   myMap.put("colors", new HashSet<>(Arrays.asList("red")));
+   myMap.merge("colors", new HashSet<>(Arrays.asList("blue")), (oldSet, newSet) -> {
+       oldSet.addAll(newSet);
+       return oldSet;
+   });
+   System.out.println(myMap); // Output: {colors=[red, blue]}
+   ```
+
+### Summary
+- **`compute`**: Updates or initializes a value based on the key, with control over both present and absent cases.
+- **`computeIfAbsent`**: Initializes the value only if the key is absent, often used for setting up initial structures.
+- **`merge`**: Combines existing and new values using a remapping function, commonly used for aggregating data.
+
+Each method is designed to simplify operations on maps, especially when dealing with complex or conditional updates, enhancing code readability and performance in concurrent contexts.
